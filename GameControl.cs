@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameControl : MonoBehaviour {
-	public GameObject cubePrefab;
+	public GameObject cubePrefab,NextcubePrefab;
 	Vector3 cubePos;
 	Vector3 NextCubePos = new Vector3 (2.5f, 11, 0);
 	int gridX = 8;
 	int gridY = 5;
 	GameObject [,] grid;
 	GameObject nextColor;
+	GameObject currentCube = null;
+	public GameObject selectedCube;
 	Color[] myColors = { Color.blue, Color.red, Color.magenta, Color.yellow, Color.green};
 	float gameDuration = 60;
 	int turn = 1;
@@ -19,7 +21,7 @@ public class GameControl : MonoBehaviour {
 
 	void NextCubeSummon () {
 		if (nextColor == null) {
-			nextColor = Instantiate (cubePrefab, NextCubePos, Quaternion.identity);
+			nextColor = Instantiate (NextcubePrefab, NextCubePos, Quaternion.identity);
 		}
 		nextColor.GetComponent<Renderer> ().material.color = myColors [Random.Range (0, myColors.Length)];
 	}
@@ -101,6 +103,57 @@ public class GameControl : MonoBehaviour {
 		}
 	}
 
+	public void MouseInput (GameObject selectedCube, int x, int y, Color cubeColor, bool CURRENT){
+		if (cubeColor != Color.white && cubeColor != Color.black) {
+
+			if (CURRENT) {
+				//deactivate
+				selectedCube.transform.localScale /= 1.5f;
+				selectedCube.GetComponent<CubeControl>().CURRENT = false;
+				currentCube = null;
+			} 
+			else {
+				//deact. any previously active cube
+
+				if (currentCube != null) {
+					currentCube.transform.localScale /= 1.5f;
+					currentCube.GetComponent<CubeControl>().CURRENT = false;
+				}
+				//activate
+				selectedCube.transform.localScale *= 1.5f;
+				selectedCube.GetComponent<CubeControl>().CURRENT = true;
+				currentCube = selectedCube;
+			}
+
+		}
+		//if white cube was clicked
+		else if (cubeColor == Color.white && currentCube != null) {
+			//This is to remind me of the distance between the Y and X variables
+			int DistancebtwnX = selectedCube.GetComponent<CubeControl> ().MyX - currentCube.GetComponent<CubeControl> ().MyX;
+			int DistancebtwnY = selectedCube.GetComponent<CubeControl> ().MyY - currentCube.GetComponent<CubeControl> ().MyY;
+
+			//ONLY IF within the correct distance, including diagnolly
+			if (Mathf.Abs(DistancebtwnY) <= 1 && Mathf.Abs(DistancebtwnX) <= 1) {
+				//Setting to correct color, which belonged to the current cube
+				selectedCube.GetComponent<Renderer>().material.color = currentCube.GetComponent<Renderer> ().material.color;
+				// Selected cube gets activated...!
+				selectedCube.GetComponent<CubeControl>().CURRENT = true;
+				//Scales up to be a big boy...
+				selectedCube.transform.localScale *= 1.5f;
+
+
+				//Deactivating the previous cube to be ... White...
+				currentCube.GetComponent<Renderer>().material.color = Color.white;
+				// ...deactivated....and...
+				currentCube.GetComponent<CubeControl> ().CURRENT = false;
+				//back to its original scale
+				currentCube.transform.localScale /= 1.5f;
+				 
+				//Current cube is now equal to a selected cube
+				currentCube = selectedCube;
+			}
+		}
+	}
 	void KeyInput(){
 		int pressNumberKey = 0;
 
@@ -141,8 +194,8 @@ public class GameControl : MonoBehaviour {
 				//Always check everything. Even if you have to squint...
 				cubePos = new Vector3 (x * 2, y * 2, 0);
 				grid[x,y] = Instantiate (cubePrefab, cubePos, Quaternion.identity);
-				grid[x,y].GetComponent<CubeControl> ().myX = x;
-				grid[x,y].GetComponent<CubeControl> ().myY = y;
+				grid[x,y].GetComponent<CubeControl> ().MyX = x;
+				grid[x,y].GetComponent<CubeControl> ().MyY = y;
 			}
 		}	
 	}
@@ -150,7 +203,7 @@ public class GameControl : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-
+	
 		CreateGrid ();
 
 
@@ -174,3 +227,6 @@ public class GameControl : MonoBehaviour {
 		}
 	}
 }
+//I realized that I kept calling parts of the code ("=", "&&", "().") particles, which are small connecters that help a noun or verb in a Japanese sentence.
+//If the wrong one is used, it won't make sense. In order to understand C# more, I'll have to learn it just like a language.
+//Although, I kinda knew that all along...
