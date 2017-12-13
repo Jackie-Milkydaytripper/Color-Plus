@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameControl : MonoBehaviour {
-	public GameObject cubePrefab,NextcubePrefab;
+	public GameObject cubePrefab;
 	Vector3 cubePos;
 	Vector3 NextCubePos = new Vector3 (2.5f, 11, 0);
 	int gridX = 8;
@@ -17,15 +17,17 @@ public class GameControl : MonoBehaviour {
 	int turn = 1;
 	float turnDuration = 2;
 	int score = 0;
+	int RainbowScore = 5;
+	int OneColorScore = 10;
 	//Controls
 
 	void NextCubeSummon () {
-		if (nextColor == null) {
-			nextColor = Instantiate (NextcubePrefab, NextCubePos, Quaternion.identity);
-		}
-		nextColor.GetComponent<Renderer> ().material.color = myColors [Random.Range (0, myColors.Length)];
-	}
+		nextColor = Instantiate (cubePrefab, NextCubePos, Quaternion.identity);
+		nextColor.GetComponent<Renderer> ().material.color =  myColors [ Random.Range (0, myColors.Length)];
+		nextColor.GetComponent<CubeControl> ().nextColor = true;
 
+	}
+	//Sets the color to a cube
 	void ColorSet (GameObject myCube, Color color) {
 		if (myCube == null) {
 			Endgame (false);
@@ -137,23 +139,86 @@ public class GameControl : MonoBehaviour {
 				//Setting to correct color, which belonged to the current cube
 				selectedCube.GetComponent<Renderer>().material.color = currentCube.GetComponent<Renderer> ().material.color;
 				// Selected cube gets activated...!
-				selectedCube.GetComponent<CubeControl>().CURRENT = true;
-				//Scales up to be a big boy...
 				selectedCube.transform.localScale *= 1.5f;
+				selectedCube.GetComponent<CubeControl>().CURRENT = true;
 
+	
 
 				//Deactivating the previous cube to be ... White...
 				currentCube.GetComponent<Renderer>().material.color = Color.white;
 				// ...deactivated....and...
+				currentCube.transform.localScale /= 1.5f;
 				currentCube.GetComponent<CubeControl> ().CURRENT = false;
 				//back to its original scale
-				currentCube.transform.localScale /= 1.5f;
 				 
 				//Current cube is now equal to a selected cube
 				currentCube = selectedCube;
 			}
 		}
 	}
+
+	bool RainbowPlus (int x, int y){
+		//Detect it cubes are in a plus config,
+		Color a = grid [x, y].GetComponent<Renderer> ().material.color;
+		Color b = grid [x+1, y].GetComponent<Renderer> ().material.color;
+		Color c = grid [x-1, y].GetComponent<Renderer> ().material.color;
+		Color d = grid [x, y+1].GetComponent<Renderer> ().material.color;
+		Color e = grid [x, y-1].GetComponent<Renderer> ().material.color;
+
+		//Shouldn't be a rainbow if w/b is present
+		if (a == Color.white || a == Color.black ||
+		    b == Color.white || b == Color.black ||
+		    c == Color.white || c == Color.black ||
+		    d == Color.white || d == Color.black ||
+		    e == Color.white || e == Color.black) {
+			return false;
+		}
+
+			
+		if (a != b && a != c && a != d && a != e &&
+			b != c && b != d && b != e && 
+			c != d && c != e && 
+			d != e){
+			return true;
+		} else {
+			return false;
+			}
+		}
+
+	bool OneColorPlus (int x, int y){
+		if (grid [x, y].GetComponent<Renderer> ().material.color != Color.white &&
+			grid [x, y].GetComponent<Renderer> ().material.color != Color.black &&
+			grid [x, y].GetComponent<Renderer> ().material.color == grid [x, y].GetComponent<Renderer> ().material.color &&
+			grid [x, y].GetComponent<Renderer> ().material.color == grid [x+1, y].GetComponent<Renderer> ().material.color &&
+		    grid [x, y].GetComponent<Renderer> ().material.color == grid [x-1, y].GetComponent<Renderer> ().material.color &&
+		    grid [x, y].GetComponent<Renderer> ().material.color == grid [x, y+1].GetComponent<Renderer> ().material.color &&
+		    grid [x, y].GetComponent<Renderer> ().material.color == grid [x, y-1].GetComponent<Renderer> ().material.color) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	void BlackPlus (int x , int y) {
+		//Checks to be sure that this does not go out of bounds
+		if (x == 0 || y == 0 || x == gridX - 1 || y == gridY - 1) {
+			//return is in relation to void; it returns the method/void first before anything else below it.
+			return; 
+		}
+		grid [x, y].GetComponent<Renderer> ().material.color = Color.black;
+		grid [x+1, y].GetComponent<Renderer> ().material.color = Color.black;
+		grid [x-1, y].GetComponent<Renderer> ().material.color = Color.black;
+		grid [x, y+1].GetComponent<Renderer> ().material.color = Color.black;
+		grid [x, y-1].GetComponent<Renderer> ().material.color = Color.black;
+
+		if (currentCube != null && currentCube.GetComponent<Renderer> ().material.color == Color.black) {
+			currentCube.transform.localScale /= 1.5f;
+			currentCube.GetComponent<CubeControl> ().CURRENT = false;
+			currentCube = null;
+		}
+
+	}
+
 	void KeyInput(){
 		int pressNumberKey = 0;
 
@@ -209,6 +274,23 @@ public class GameControl : MonoBehaviour {
 
 	}
 
+	void Score () {
+
+		//checks entire grid aside from edges, since pluses can't be there
+		for (int x = 1; x < gridX - 1; x++) {
+			for (int y = 1; y < gridY - 1; y++) {
+				//Method is placed inside of this if-statement because RainbowPlus/OneColorPlus returns a bool (true or false)
+				if (RainbowPlus (x, y)) {
+					score += RainbowScore; 
+					BlackPlus (x,y);
+				}
+				if (OneColorPlus (x, y)) {
+					score += OneColorScore;
+					BlackPlus (x, y);
+				}
+			}
+		}
+	}
 
 	// Update is called once per frame
 	void Update () {
