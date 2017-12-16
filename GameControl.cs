@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameControl : MonoBehaviour {
 	public GameObject cubePrefab;
@@ -11,14 +13,17 @@ public class GameControl : MonoBehaviour {
 	GameObject [,] grid;
 	GameObject nextColor;
 	GameObject currentCube = null;
-	public GameObject selectedCube;
+	public Text NextCubeText;
 	Color[] myColors = { Color.blue, Color.red, Color.magenta, Color.yellow, Color.green};
 	float gameDuration = 60;
 	int turn = 1;
-	float turnDuration = 2;
+	float turnDuration = 5;
 	int score = 0;
 	int RainbowScore = 5;
 	int OneColorScore = 10;
+	public Text Scoring;
+
+	bool GameEnd = false;
 	//Controls
 
 	void NextCubeSummon () {
@@ -98,11 +103,20 @@ public class GameControl : MonoBehaviour {
 	void Endgame (bool win){
 		if (win) {
 			//Game over...in a good way!
-			print ("Congrats, a winner is you!");
+			NextCubeText.text = " A winner is you!";
 		} else {
 			//End the game
-			print ("Oops! Game over. C'mon, let's try again!");
+			NextCubeText.text = " You lose...";
 		}
+		Destroy (nextColor);
+		nextColor = null;
+		for (int x = 0; x < gridX; x++) {
+			for (int y = 0; y < gridY; y++) {
+				grid[x,y].GetComponent<CubeControl>().nextColor = true;
+
+			}
+		}
+		GameEnd = true;
 	}
 
 	public void MouseInput (GameObject selectedCube, int x, int y, Color cubeColor, bool CURRENT){
@@ -293,22 +307,39 @@ public class GameControl : MonoBehaviour {
 	}
 
 	// Update is called once per frame
-	void Update () {
+	void Update ()
+	{
 
-		KeyInput();
+		if (Time.time < gameDuration) {
+			
+			KeyInput ();
 
-		if (Time.time > turnDuration * turn) {
-			turn++;
+			if (Time.time > turnDuration * turn) {
+				turn++;
 
-			if (nextColor != null) {
-				score -= 1;
-				BlackCubeSummon ();
+				if (nextColor != null) {
+					score -= 1;
+					if (score < 0) {
+						score = 0;
+					}
+					BlackCubeSummon ();
+				}
+
+				NextCubeSummon ();
 			}
+			Scoring.text = "Score: " + score;
 
-			NextCubeSummon ();
+		} else if (!GameEnd) {
+			if (score > 0) {
+				Endgame (true);
+
+			} else {
+				Endgame (false);
+			}
 		}
 	}
 }
+		 
 //I realized that I kept calling parts of the code ("=", "&&", "().") particles, which are small connecters that help a noun or verb in a Japanese sentence.
 //If the wrong one is used, it won't make sense. In order to understand C# more, I'll have to learn it just like a language.
 //Although, I kinda knew that all along...
